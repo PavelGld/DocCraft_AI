@@ -55,8 +55,7 @@ export function PreviewPanel({ content, format, scrollPercentage }: PreviewPanel
       color: #e5e7eb;
       background: #1a1b1e;
       padding: 24px;
-      max-width: 100%;
-      overflow-x: hidden;
+      min-width: max-content;
     }
     h1, h2, h3, h4, h5, h6 {
       color: #f3f4f6;
@@ -151,7 +150,7 @@ export function PreviewPanel({ content, format, scrollPercentage }: PreviewPanel
       color: #e5e7eb;
       background: #1a1b1e;
       padding: 24px;
-      max-width: 100%;
+      min-width: max-content;
     }
     .katex { font-size: 1.1em; }
     .katex-display { margin: 1em 0; overflow-x: auto; }
@@ -210,7 +209,7 @@ export function PreviewPanel({ content, format, scrollPercentage }: PreviewPanel
       color: #e5e7eb;
       background: #1a1b1e;
       padding: 24px;
-      max-width: 100%;
+      min-width: max-content;
       white-space: pre-wrap;
     }
   </style>
@@ -263,7 +262,7 @@ export function PreviewPanel({ content, format, scrollPercentage }: PreviewPanel
         </Button>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-auto">
         {error ? (
           <div className="flex items-center justify-center h-full p-4">
             <div className="text-center">
