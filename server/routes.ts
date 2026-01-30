@@ -11,11 +11,6 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
-
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -96,7 +91,7 @@ export async function registerRoutes(
   app.post("/api/documents/:id/chat", async (req, res) => {
     try {
       const documentId = parseInt(req.params.id);
-      const { content, documentContent, format } = req.body;
+      const { content, documentContent, format, apiKey, baseUrl, model } = req.body;
 
       if (!content) {
         return res.status(400).json({ error: "Message content is required" });
@@ -116,14 +111,23 @@ Current document content:
 ${documentContent}
 ---
 
+IMPORTANT INSTRUCTION FOR DOCUMENT EDITS:
+When the user asks you to edit, modify, add content, or make changes to the document, you MUST:
+1. Generate the complete updated document
+2. Return it in your response using this EXACT format:
+
+<<<DOCUMENT_UPDATE>>>
+[complete updated document here]
+<<<END_UPDATE>>>
+
+After the document update block, you can add a brief explanation of what you changed.
+
 Guidelines:
-- Provide helpful, concise responses
-- When suggesting edits, be specific about what to change
-- If asked to generate content, format it appropriately for the ${format} format
+- When editing, ALWAYS include the <<<DOCUMENT_UPDATE>>> block with the full updated content
 - For HTML, use proper semantic tags
 - For LaTeX, use proper LaTeX syntax with commands like \\section{}, \\textbf{}, etc.
 - For RTF, use RTF control words like \\b for bold, \\i for italic
-- Keep responses focused and actionable`;
+- Keep explanations brief and helpful`;
 
       const existingMessages = await storage.getChatMessages(documentId);
       const chatHistory = existingMessages.slice(-10).map((m) => ({
@@ -135,14 +139,23 @@ Guidelines:
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
+      const effectiveApiKey = apiKey || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+      const effectiveBaseUrl = baseUrl || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+      const effectiveModel = model || "gpt-4o";
+
+      const openai = new OpenAI({
+        apiKey: effectiveApiKey,
+        baseURL: effectiveBaseUrl,
+      });
+
       const stream = await openai.chat.completions.create({
-        model: "gpt-5.1",
+        model: effectiveModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...chatHistory,
         ],
         stream: true,
-        max_completion_tokens: 2048,
+        max_tokens: 4096,
       });
 
       let fullResponse = "";
@@ -153,6 +166,14 @@ Guidelines:
           fullResponse += text;
           res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
         }
+      }
+
+      const documentUpdateMatch = fullResponse.match(/<<<DOCUMENT_UPDATE>>>([\s\S]*?)<<<END_UPDATE>>>/);
+      if (documentUpdateMatch) {
+        const updatedContent = documentUpdateMatch[1].trim();
+        res.write(`data: ${JSON.stringify({ documentUpdate: updatedContent })}\n\n`);
+        
+        await storage.updateDocument(documentId, { content: updatedContent });
       }
 
       await storage.createChatMessage({

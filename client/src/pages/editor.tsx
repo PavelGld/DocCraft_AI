@@ -9,6 +9,7 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { CodeEditor } from "@/components/CodeEditor";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { StatusBar } from "@/components/StatusBar";
+import { SettingsDialog, type AISettings } from "@/components/SettingsDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -94,6 +95,28 @@ You can create documents that work across different word processors.
 \\par
 }`;
 
+const SETTINGS_KEY = "doccraft_ai_settings";
+
+function loadSettings(): AISettings {
+  try {
+    const stored = localStorage.getItem(SETTINGS_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error("Failed to load settings:", e);
+  }
+  return { apiKey: "", baseUrl: "", model: "gpt-4o" };
+}
+
+function saveSettings(settings: AISettings) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error("Failed to save settings:", e);
+  }
+}
+
 export default function EditorPage() {
   const [documentId, setDocumentId] = useState<number | null>(null);
   const [title, setTitle] = useState("Untitled Document");
@@ -104,6 +127,8 @@ export default function EditorPage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [scrollPercentage, setScrollPercentage] = useState(0);
   const [isConnected, setIsConnected] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aiSettings, setAiSettings] = useState<AISettings>(loadSettings);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -115,8 +140,10 @@ export default function EditorPage() {
   });
 
   const createDocumentMutation = useMutation({
-    mutationFn: async (data: { title: string; content: string; format: string }) =>
-      apiRequest("POST", "/api/documents", data),
+    mutationFn: async (data: { title: string; content: string; format: string }): Promise<Document> => {
+      const res = await apiRequest("POST", "/api/documents", data);
+      return res.json();
+    },
     onSuccess: (doc: Document) => {
       setDocumentId(doc.id);
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
@@ -130,7 +157,10 @@ export default function EditorPage() {
     }: {
       id: number;
       data: { title?: string; content?: string; format?: string };
-    }) => apiRequest("PATCH", `/api/documents/${id}`, data),
+    }): Promise<Document> => {
+      const res = await apiRequest("PATCH", `/api/documents/${id}`, data);
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
     },
@@ -145,6 +175,15 @@ export default function EditorPage() {
       setFormat(doc.format as "html" | "latex" | "rtf");
     }
   }, [documents, documentId]);
+
+  const handleSaveSettings = useCallback((newSettings: AISettings) => {
+    setAiSettings(newSettings);
+    saveSettings(newSettings);
+    toast({
+      title: "Settings saved",
+      description: `Using ${newSettings.model || "default model"}`,
+    });
+  }, [toast]);
 
   const handleFormatChange = useCallback(
     (newFormat: "html" | "latex" | "rtf") => {
@@ -315,6 +354,9 @@ export default function EditorPage() {
             content: messageContent,
             documentContent: content,
             format,
+            apiKey: aiSettings.apiKey || undefined,
+            baseUrl: aiSettings.baseUrl || undefined,
+            model: aiSettings.model || undefined,
           }),
         });
 
@@ -350,6 +392,14 @@ export default function EditorPage() {
                 setStreamingContent(fullResponse);
               }
               
+              if (data.documentUpdate) {
+                setContent(data.documentUpdate);
+                toast({
+                  title: "Document updated",
+                  description: "AI has applied changes to your document",
+                });
+              }
+              
               if (data.done) {
                 const assistantMessage: ChatMessage = {
                   id: Date.now() + 1,
@@ -360,10 +410,6 @@ export default function EditorPage() {
                 };
                 setMessages((prev) => [...prev, assistantMessage]);
                 setStreamingContent("");
-              }
-              
-              if (data.documentUpdate) {
-                setContent(data.documentUpdate);
               }
               
               if (data.error) {
@@ -381,7 +427,7 @@ export default function EditorPage() {
         console.error("Chat error:", error);
         toast({
           title: "Message failed",
-          description: "Could not send message to AI. Please try again.",
+          description: "Could not send message to AI. Please check your settings.",
           variant: "destructive",
         });
         setIsConnected(false);
@@ -390,7 +436,7 @@ export default function EditorPage() {
         setIsAiLoading(false);
       }
     },
-    [documentId, content, format, title, createDocumentMutation, toast]
+    [documentId, content, format, title, createDocumentMutation, toast, aiSettings]
   );
 
   const handleEditorScroll = useCallback((scrollTop: number, maxScroll: number) => {
@@ -432,6 +478,7 @@ export default function EditorPage() {
               isLoading={isAiLoading}
               streamingContent={streamingContent}
               documentContent={content}
+              onOpenSettings={() => setSettingsOpen(true)}
             />
           </ResizablePanel>
 
@@ -464,6 +511,13 @@ export default function EditorPage() {
         format={format}
         lineCount={lineCount}
         characterCount={characterCount}
+      />
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={aiSettings}
+        onSave={handleSaveSettings}
       />
     </div>
   );
