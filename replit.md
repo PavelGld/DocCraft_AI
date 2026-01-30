@@ -38,9 +38,14 @@ Preferred communication style: Simple, everyday language.
   - `conversations` / `messages`: General chat storage for AI integrations
 
 ### AI Integration
-- **Provider**: OpenAI API (configurable via environment variables)
-- **Features**: Chat completions for document assistance, streaming responses
-- **Additional Capabilities**: Image generation, voice chat (via Replit AI integrations)
+- **Provider**: Multiple AI providers supported (OpenAI, Google Gemini, Alibaba Qwen)
+- **Configuration**: User-configurable API key, base URL, and model selection via Settings dialog
+- **Supported Models**: GPT-4o, GPT-4o-mini, GPT-4-turbo, Gemini 1.5/2.0, Qwen Max/Plus/Turbo/3
+- **Features**: 
+  - Chat completions for document assistance with SSE streaming responses
+  - Automatic document updates - AI applies edits directly to the editor
+  - Document update markers (<<<DOCUMENT_UPDATE>>>...<<<END_UPDATE>>>) for structured responses
+- **Settings Storage**: User preferences saved in localStorage
 
 ### Key Design Patterns
 - **Shared Schema**: Database schema and Zod validation schemas shared between frontend and backend via `@shared/*` path alias
