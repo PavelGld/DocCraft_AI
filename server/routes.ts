@@ -159,8 +159,8 @@ Guidelines:
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const effectiveApiKey = apiKey || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-      const effectiveBaseUrl = baseUrl || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+      const effectiveApiKey = apiKey || process.env.OPENAI_API_KEY;
+      const effectiveBaseUrl = baseUrl || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
       const effectiveModel = model || "gpt-4o";
 
       const openai = new OpenAI({

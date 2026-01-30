@@ -67,8 +67,8 @@ DATABASE_URL=postgresql://user:password@localhost:5432/doccraft
 SESSION_SECRET=your-session-secret-here
 
 # Optional: Default AI provider (leave empty to require user configuration)
-AI_INTEGRATIONS_OPENAI_API_KEY=sk-your-openai-key
-AI_INTEGRATIONS_OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=sk-your-openai-key
+OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
 ### 4. Set up the database
@@ -87,15 +87,7 @@ The application will be available at `http://localhost:5000`
 
 ## Server Deployment
 
-### Using Replit
-
-1. Fork or import the project to Replit
-2. The PostgreSQL database is automatically configured
-3. Add your AI provider API key in Settings (optional)
-4. Click "Run" to start the application
-5. Use "Publish" to deploy to production
-
-### Manual Server Deployment
+### Standard Deployment
 
 #### 1. Build the application
 
@@ -111,8 +103,8 @@ DATABASE_URL=postgresql://user:password@host:5432/doccraft
 SESSION_SECRET=your-secure-session-secret
 
 # Optional AI configuration
-AI_INTEGRATIONS_OPENAI_API_KEY=sk-your-openai-key
-AI_INTEGRATIONS_OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=sk-your-openai-key
+OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
 #### 3. Run database migrations

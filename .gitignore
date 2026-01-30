@@ -4,3 +4,9 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Replit
+.replit
+replit.md
+.cache/replit/
+replit_integrations/
