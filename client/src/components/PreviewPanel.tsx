@@ -274,7 +274,7 @@ export function PreviewPanel({ content, format, scrollPercentage }: PreviewPanel
           <iframe
             ref={iframeRef}
             className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin"
+            sandbox={format === "latex" ? "allow-scripts allow-same-origin" : ""}
             title="Document Preview"
             data-testid="iframe-preview"
           />
