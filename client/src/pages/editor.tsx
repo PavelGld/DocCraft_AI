@@ -5,7 +5,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ChatPanel } from "@/components/ChatPanel";
+import { ChatPanel, type AttachedFile } from "@/components/ChatPanel";
 import { CodeEditor } from "@/components/CodeEditor";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { StatusBar } from "@/components/StatusBar";
@@ -320,7 +320,7 @@ export default function EditorPage() {
   }, [content, format, title, toast]);
 
   const handleSendMessage = useCallback(
-    async (messageContent: string) => {
+    async (messageContent: string, attachedFiles?: AttachedFile[]) => {
       let currentDocId = documentId;
       
       if (!currentDocId) {
@@ -333,11 +333,19 @@ export default function EditorPage() {
         setDocumentId(doc.id);
       }
 
+      let displayMessage = messageContent;
+      if (attachedFiles && attachedFiles.length > 0) {
+        const fileNames = attachedFiles.map(f => f.name).join(", ");
+        displayMessage = messageContent 
+          ? `${messageContent}\n\n[Attached: ${fileNames}]`
+          : `[Attached: ${fileNames}]`;
+      }
+
       const userMessage: ChatMessage = {
         id: Date.now(),
         documentId: currentDocId,
         role: "user",
-        content: messageContent,
+        content: displayMessage,
         createdAt: new Date(),
       };
 
@@ -357,6 +365,7 @@ export default function EditorPage() {
             apiKey: aiSettings.apiKey || undefined,
             baseUrl: aiSettings.baseUrl || undefined,
             model: aiSettings.model || undefined,
+            attachedFiles: attachedFiles?.map(f => ({ name: f.name, content: f.content })),
           }),
         });
 

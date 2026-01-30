@@ -1,7 +1,6 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useCallback } from "react";
 import { Code2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 
 interface CodeEditorProps {
@@ -58,13 +57,6 @@ export function CodeEditor({
     }
   };
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, 400)}px`;
-    }
-  }, [content]);
-
   return (
     <div className="flex flex-col h-full bg-card">
       <div className="h-11 border-b border-card-border flex items-center justify-between px-4 shrink-0">
@@ -96,7 +88,7 @@ export function CodeEditor({
         </Button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         <div
           ref={lineNumbersRef}
           className="w-12 bg-muted/50 text-muted-foreground text-right py-4 pr-3 font-mono text-sm leading-6 select-none overflow-hidden border-r border-border"
@@ -108,18 +100,16 @@ export function CodeEditor({
           ))}
         </div>
 
-        <div className="flex-1 relative">
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => onChange(e.target.value)}
-            onScroll={handleScroll}
-            onKeyDown={handleKeyDown}
-            className="absolute inset-0 w-full h-full p-4 font-mono text-sm leading-6 bg-transparent text-foreground resize-none outline-none code-editor custom-scrollbar"
-            spellCheck={false}
-            data-testid="textarea-code-editor"
-          />
-        </div>
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => onChange(e.target.value)}
+          onScroll={handleScroll}
+          onKeyDown={handleKeyDown}
+          className="flex-1 p-4 font-mono text-sm leading-6 bg-transparent text-foreground resize-none outline-none code-editor overflow-auto"
+          spellCheck={false}
+          data-testid="textarea-code-editor"
+        />
       </div>
     </div>
   );

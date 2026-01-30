@@ -91,17 +91,36 @@ export async function registerRoutes(
   app.post("/api/documents/:id/chat", async (req, res) => {
     try {
       const documentId = parseInt(req.params.id);
-      const { content, documentContent, format, apiKey, baseUrl, model } = req.body;
+      const { content, documentContent, format, apiKey, baseUrl, model, attachedFiles } = req.body;
 
-      if (!content) {
-        return res.status(400).json({ error: "Message content is required" });
+      if (!content && (!attachedFiles || attachedFiles.length === 0)) {
+        return res.status(400).json({ error: "Message content or files are required" });
+      }
+
+      let userMessageContent = content || "";
+      if (attachedFiles && attachedFiles.length > 0) {
+        const fileNames = attachedFiles.map((f: { name: string }) => f.name).join(", ");
+        userMessageContent = content 
+          ? `${content}\n\n[Attached: ${fileNames}]`
+          : `[Attached: ${fileNames}]`;
       }
 
       await storage.createChatMessage({
         documentId,
         role: "user",
-        content,
+        content: userMessageContent,
       });
+
+      let attachedFilesContext = "";
+      if (attachedFiles && attachedFiles.length > 0) {
+        attachedFilesContext = "\n\nAttached files for context:\n";
+        for (const file of attachedFiles) {
+          const truncatedContent = file.content.length > 10000 
+            ? file.content.substring(0, 10000) + "\n... [content truncated]"
+            : file.content;
+          attachedFilesContext += `\n--- ${file.name} ---\n${truncatedContent}\n`;
+        }
+      }
 
       const systemPrompt = `You are DocCraft AI, an intelligent document creation assistant. You help users write, edit, and improve their documents.
 
@@ -109,7 +128,7 @@ Current document format: ${format.toUpperCase()}
 Current document content:
 ---
 ${documentContent}
----
+---${attachedFilesContext}
 
 IMPORTANT INSTRUCTION FOR DOCUMENT EDITS:
 When the user asks you to edit, modify, add content, or make changes to the document, you MUST:
@@ -127,7 +146,8 @@ Guidelines:
 - For HTML, use proper semantic tags
 - For LaTeX, use proper LaTeX syntax with commands like \\section{}, \\textbf{}, etc.
 - For RTF, use RTF control words like \\b for bold, \\i for italic
-- Keep explanations brief and helpful`;
+- Keep explanations brief and helpful
+- You can reference any attached files in your responses`;
 
       const existingMessages = await storage.getChatMessages(documentId);
       const chatHistory = existingMessages.slice(-10).map((m) => ({
