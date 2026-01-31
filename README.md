@@ -1,5 +1,7 @@
 # DocCraft AI
 
+![image](image.png)
+
 A web-based collaborative document creation platform with AI assistance. Features a three-panel layout inspired by modern code editors: an AI chat panel for document editing assistance, a code editor for writing documents in HTML/LaTeX/RTF formats, and a real-time preview panel.
 
 ## Features
@@ -41,7 +43,7 @@ A web-based collaborative document creation platform with AI assistance. Feature
 
 - Node.js 18+ 
 - PostgreSQL database
-- API key from OpenAI, Google AI, or Alibaba Cloud (optional - Replit provides default)
+- API key from OpenAI, Google AI, or Alibaba Cloud
 
 ## Local Development
 
